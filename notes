@@ -32,6 +32,8 @@ ls_notes() {
     local formatted_output
 
     if [ $# -gt 0 ]; then
+        printf "\nm: ${*%/}" #| sed -e 's/[]\/$*.^|[]/\\&/g'
+        printf "\nn: ${*%/}" | sed -e 's/[]\/$*.^|[]/\\&/g'
         local path_prefix=$(printf "${*%/}" | sed -e 's/[]\/$*.^|[]/\\&/g')
         formatted_output=$(printf "$ls_output" | sed -E "s/^/$path_prefix\//")
     else
@@ -135,6 +137,24 @@ remove_note() {
         to_remove="$notes_dir/$note_name.$NOTES_EXT"
     fi
     rm "${rm_args[@]}" "$to_remove"
+}
+
+move_note() {
+    if [ ! "$#" -eq 2 ]; then
+        printf "Move/rename requires a source and a destination."
+        return 1
+    fi
+
+    local move_source="$notes_dir/$1.$NOTES_EXT"
+    local move_destination="$notes_dir/$2.$NOTES_EXT"
+
+    # if the source location is in another directory, make sure it exists
+    if [[ "$2" =~ .*/.* ]]; then
+        move_destination_dir=${2%%/*}
+        mkdir -pv "$notes_dir/$move_destination_dir" 2>&1
+    fi
+
+    mv -i "$move_source" "$move_destination" 2>&1
 }
 
 handle_multiple_notes() {
@@ -250,6 +270,9 @@ main() {
             ;;
         "rm" )
             cmd="remove_note"
+            ;;
+        "mv" )
+            cmd="move_note"
             ;;
         "cat" )
             cmd="handle_multiple_notes cat"
